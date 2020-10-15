@@ -1,0 +1,72 @@
+<html>
+	<head>
+		<title>TinyMap</title>
+		<meta charset="utf8">
+		<link rel="stylesheet"
+			href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+			integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+			crossorigin=""/>
+		<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+			integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+			crossorigin=""></script>
+	</head>
+
+	<body>
+		<div id="mainmap"></div>
+
+		<style>
+			#mainmap { height: 100%; width: 100%; }
+			.leaflet-tile { image-rendering: optimizeSpeed; }
+			body { margin: 0; padding: 0; }
+		</style>
+
+		<script>
+			let map = L.map("mainmap", {
+				crs: L.CRS.Simple,
+				minZoom: -2
+			}).setView([0, 0], 3);
+
+			function makeLayer(dimName) {
+				return L.tileLayer("/tiles/{dim}/{z}/{x}/{y}/tile.png", {
+					minNativeZoom: 0,
+					maxNativeZoom: 0,
+					minZoom: -2,
+					maxZoom: 6,
+					tileSize: 16,
+					errorTileUrl: "notfound.png",
+					dim: dimName
+				});
+			}
+
+			let overworld = makeLayer("minecraft:overworld");
+
+			L.GridLayer.DebugCoords = L.GridLayer.extend({
+				createTile: function (coords) {
+					var tile = document.createElement('div');
+					tile.innerHTML = [coords.x, coords.y, coords.z].join(', ');
+					tile.style.outline = '1px solid red';
+					return tile;
+				}
+			});
+
+			L.gridLayer.debugCoords = function(opts) {
+				return new L.GridLayer.DebugCoords(opts);
+			};
+
+			overworld.addTo(map);
+
+			L.control.layers({
+				"minecraft:overworld": overworld,
+				"minecraft:the_nether": makeLayer("minecraft:the_nether"),
+				"minecraft:the_end": makeLayer("minecraft:the_end")
+			}, {
+				"Debug Coords": L.gridLayer.debugCoords({
+					minNativeZoom: -1,
+					maxNativeZoom: 0,
+					minZoom: -2,
+					maxZoom: 6
+				})
+			}).addTo(map);
+		</script>
+	</body>
+</html>

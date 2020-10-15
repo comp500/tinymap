@@ -1,0 +1,27 @@
+{
+	"schemaVersion": 1,
+	"id": "tinymap",
+	"version": "${version}",
+	"name": "TinyMap",
+	"description": "A lightweight server-side stateless web map",
+	"authors": [
+		"comp500"
+	],
+	"contact": {
+		"website": "https://github.com/comp500/tinymap",
+		"repo": "https://github.com/comp500/tinymap"
+	},
+	"license": "MIT",
+	"icon": "assets/tinymap/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"link.infra.tinymap.TinyMap"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.10.1+build.209",
+		"fabric": "*",
+		"minecraft": "1.16.3"
+	}
+}
