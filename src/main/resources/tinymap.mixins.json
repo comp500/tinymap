@@ -1,0 +1,14 @@
+{
+	"required": true,
+	"minVersion": "0.8",
+	"package": "link.infra.tinymap.mixin",
+	"compatibilityLevel": "JAVA_8",
+	"mixins": [
+		"MinecraftServerAccessor"
+	],
+	"client": [
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

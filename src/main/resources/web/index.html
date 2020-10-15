@@ -24,7 +24,7 @@
 			let map = L.map("mainmap", {
 				crs: L.CRS.Simple,
 				minZoom: -2
-			}).setView([0, 0], 3);
+			}).setView([0, 0], 5);
 
 			function makeLayer(dimName) {
 				return L.tileLayer("/tiles/{dim}/{z}/{x}/{y}/tile.png", {
