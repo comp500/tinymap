@@ -40,8 +40,10 @@ public class TileGenerator {
 		return null;
 	}
 
+	// TODO: run datafixers
+
+	// TODO: check if chunk region check shows too many chunks?
 	public static final int TILE_SIZE = 256;
-	public static final int TILE_TO_BLOCK_SHIFT = -16;
 	public static final int TILE_TO_CHUNK_SHIFT = -4;
 	public static final int TILE_TO_REGION_SHIFT = TILE_TO_CHUNK_SHIFT + 5;
 
@@ -97,7 +99,7 @@ public class TileGenerator {
 		}
 	}
 
-	// TODO: abstract the act of getting blocks
+	// TODO: zoomed out
 	private int[] getColorsFromWorld(ServerWorld world, int tileX, int tileZ, int zoomShift, BlockDigger.Session digger) {
 		BlockSearcher searcher = new BlockSearcher(world);
 
@@ -108,14 +110,14 @@ public class TileGenerator {
 		boolean hasCeiling = world.getDimension().hasCeiling();
 
 		for (int chunkOffX = 0; chunkOffX < chunkSize; chunkOffX++) {
-			Chunk chunkBefore = digger.getChunkView(chunkOriginX + chunkOffX, chunkOriginZ + chunkSize - 1);
-			ChunkPos chunkPosBefore = new ChunkPos(chunkOriginX + chunkOffX, chunkOriginZ + chunkSize - 1);
+			Chunk chunkBefore = digger.getChunkView(chunkOriginX + chunkOffX, chunkOriginZ - 1);
+			ChunkPos chunkPosBefore = new ChunkPos(chunkOriginX + chunkOffX, chunkOriginZ - 1);
 			Heightmap chunkBeforeHeightmap = null;
 			if (chunkBefore != null) {
 				chunkBeforeHeightmap = chunkBefore.getHeightmap(Heightmap.Type.WORLD_SURFACE);
 			}
-			// TODO: fix shadE!!!!!!
-			int[] lastHeights = new int[16];
+
+			int[] lastHeights = new int[chunkSize];
 
 			for (int chunkOffZ = 0; chunkOffZ < chunkSize; chunkOffZ++) {
 				Chunk chunk = digger.getChunkView(chunkOriginX + chunkOffX, chunkOriginZ + chunkOffZ);
@@ -125,17 +127,16 @@ public class TileGenerator {
 				}
 				Heightmap chunkHeightmap = chunk.getHeightmap(Heightmap.Type.WORLD_SURFACE);
 
-				int lastHeight = 0;
 				for (int xOff = 0; xOff < 16; xOff++) {
 					// TODO: check isEmpty???
-					if (chunkBefore != null) {
+					if (chunkBefore != null && chunkOffZ == 0) {
 						// Get first line, to calculate proper shade
 						if (hasCeiling) {
 							searcher.searchForBlockCeil(chunkBefore, xOff, 15, chunkPosBefore.getStartX(), chunkPosBefore.getStartZ());
 						} else {
 							searcher.searchForBlock(chunkBefore, chunkBeforeHeightmap, xOff, 15, chunkPosBefore.getStartX(), chunkPosBefore.getStartZ());
 						}
-						lastHeight = searcher.height;
+						lastHeights[xOff] = searcher.height;
 					}
 
 					for (int zOff = 0; zOff < 16; zOff++) {
@@ -163,7 +164,7 @@ public class TileGenerator {
 								shade = 0;
 							}
 						} else {
-							double shadeTest = (searcher.height - lastHeight) * 4.0D / 5.0D + ((double) (xOff + zOff & 1) - 0.5D) * 0.4D;
+							double shadeTest = (searcher.height - lastHeights[xOff]) * 4.0D / 5.0D + ((double) (xOff + zOff & 1) - 0.5D) * 0.4D;
 							shade = 1;
 							if (shadeTest > 0.6D) {
 								shade = 2;
@@ -173,7 +174,7 @@ public class TileGenerator {
 							}
 						}
 
-						lastHeight = searcher.height;
+						lastHeights[xOff] = searcher.height;
 						colors[(zOff + (chunkOffZ * 16)) * TILE_SIZE + (xOff + (chunkOffX * 16))] = getRenderColor(matColor, shade);
 					}
 				}
@@ -182,77 +183,6 @@ public class TileGenerator {
 
 		return colors;
 	}
-
-//	private int[] getColorsFromWorld(ServerWorld world, ChunkPos chunkPos) {
-//		// TODO: fail if chunk is empty?
-//		WorldChunk worldChunk = world.getChunk(chunkPos.x, chunkPos.z);
-//		Heightmap worldChunkHeightmap = worldChunk.getHeightmap(Heightmap.Type.WORLD_SURFACE);
-//		ChunkPos chunkPosBefore = new ChunkPos(chunkPos.x, chunkPos.z - 1);
-//		WorldChunk worldChunkBefore = worldChunk.getWorld().getChunk(chunkPosBefore.x, chunkPosBefore.z);
-//		Heightmap worldChunkBeforeHeightmap = null;
-//		if (worldChunkBefore != null) {
-//			worldChunkBeforeHeightmap = worldChunkBefore.getHeightmap(Heightmap.Type.WORLD_SURFACE);
-//		}
-//
-//		int[] colors = new int[16 * 16];
-//		BlockSearcher searcher = new BlockSearcher(world);
-//
-//		boolean hasCeiling = world.getDimension().hasCeiling();
-//
-//		int lastHeight = 0;
-//		for (int xOff = 0; xOff < 16; xOff++) {
-//			if (worldChunkBefore != null && !worldChunkBefore.isEmpty()) {
-//				// Get first line, to calculate proper shade
-//				if (hasCeiling) {
-//					searcher.searchForBlockCeil(worldChunkBefore, xOff, 15, chunkPosBefore.getStartX(), chunkPosBefore.getStartZ());
-//				} else {
-//					searcher.searchForBlock(worldChunkBefore, worldChunkBeforeHeightmap, xOff, 15, chunkPosBefore.getStartX(), chunkPosBefore.getStartZ());
-//				}
-//				lastHeight = searcher.height;
-//			}
-//
-//			for (int zOff = 0; zOff < 16; zOff++) {
-//				if (hasCeiling) {
-//					searcher.searchForBlockCeil(worldChunk, xOff, zOff, chunkPos.getStartX(), chunkPos.getStartZ());
-//				} else {
-//					searcher.searchForBlock(worldChunk, worldChunkHeightmap, xOff, zOff, chunkPos.getStartX(), chunkPos.getStartZ());
-//				}
-//
-//				if (searcher.height > 0 && !searcher.blockState.getFluidState().isEmpty()) {
-//					searcher.calcWaterDepth(worldChunk);
-//				}
-//
-//				MaterialColor matColor = searcher.blockState.getTopMaterialColor(world, searcher.pos);
-//				int shade;
-//
-//				if (matColor == MaterialColor.WATER) {
-//					double shadeTest = (double) searcher.waterDepth * 0.1D + (double) (xOff + zOff & 1) * 0.2D;
-//					shade = 1;
-//					if (shadeTest < 0.5D) {
-//						shade = 2;
-//					}
-//
-//					if (shadeTest > 0.9D) {
-//						shade = 0;
-//					}
-//				} else {
-//					double shadeTest = (searcher.height - lastHeight) * 4.0D / 5.0D + ((double) (xOff + zOff & 1) - 0.5D) * 0.4D;
-//					shade = 1;
-//					if (shadeTest > 0.6D) {
-//						shade = 2;
-//					}
-//					if (shadeTest < -0.6D) {
-//						shade = 0;
-//					}
-//				}
-//
-//				lastHeight = searcher.height;
-//				colors[zOff * 16 + xOff] = getRenderColor(matColor, shade);
-//			}
-//		}
-//
-//		return colors;
-//	}
 
 	private static final class BlockSearcher {
 		public final BlockPos.Mutable pos = new BlockPos.Mutable();
