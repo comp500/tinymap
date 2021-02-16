@@ -22,7 +22,7 @@
 	"depends": {
 		"fabricloader": ">=0.10.1+build.209",
 		"fabric": "*",
-		"minecraft": "1.16.3"
+		"minecraft": "1.16.x"
 	},
 	"mixins": [
 		"tinymap.mixins.json"
