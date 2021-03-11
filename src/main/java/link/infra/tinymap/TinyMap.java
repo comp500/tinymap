@@ -14,10 +14,15 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Properties;
 
 public class TinyMap implements ModInitializer {
-	private static final int PORT = 8080;
+	private static Properties CONFIG = null;
 
 	private static EventLoopGroup managerGroup = null;
 	private static EventLoopGroup workerGroup = null;
@@ -26,6 +31,8 @@ public class TinyMap implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		Path basePath = FabricLoader.getInstance().getModContainer("tinymap").get().getPath("web");
+		loadConfig(Paths.get(FabricLoader.getInstance().getConfigDir().toString(), "tinymap.properties"));
+		String port = CONFIG.getProperty("web_port");
 
 		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
 			managerGroup = new NioEventLoopGroup(1, new DefaultThreadFactory(NioEventLoopGroup.class, true));
@@ -45,9 +52,10 @@ public class TinyMap implements ModInitializer {
 						pipeline.addLast(new HttpServerHandler(basePath, tileGenerator));
 					}
 				});
-			b.bind(PORT);
+			b.bind(Integer.parseInt(port));
 
-			System.out.println("Open your web browser and navigate to http://127.0.0.1:" + PORT + '/');
+
+			System.out.println("Open your web browser and navigate to http://127.0.0.1:" + port + '/');
 		});
 
 		ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
@@ -61,6 +69,26 @@ public class TinyMap implements ModInitializer {
 			workerGroup = null;
 			tileGenerator = null;
 		});
+	}
+
+	public void loadConfig(Path configPath) {
+		Properties props = new Properties();
+
+		if (!configPath.toFile().exists()) {
+			try {
+				Files.copy(TinyMap.class.getResourceAsStream("/config.properties"), configPath);
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+		}
+
+		try {
+			props.load(new FileInputStream(configPath.toString()));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		CONFIG = props;
 	}
 
 }
