@@ -265,7 +265,7 @@ class UnloadedChunkView implements Chunk {
 
 	@Override
 	public int getHeight() {
-		return 0;
+		return 256;
 	}
 
 	@Override
