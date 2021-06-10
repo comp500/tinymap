@@ -2,7 +2,7 @@ package link.infra.tinymap;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.MaterialColor;
+import net.minecraft.block.MapColor;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
@@ -150,10 +150,10 @@ public class TileGenerator {
 							searcher.calcWaterDepth(chunk);
 						}
 
-						MaterialColor matColor = searcher.blockState.getTopMaterialColor(world, searcher.pos);
+						MapColor matColor = searcher.blockState.getMapColor(world, searcher.pos);
 						int shade;
 
-						if (matColor == MaterialColor.WATER) {
+						if (matColor == MapColor.WATER_BLUE) {
 							double shadeTest = (double) searcher.waterDepth * 0.1D + (double) (xOff + zOff & 1) * 0.2D;
 							shade = 1;
 							if (shadeTest < 0.5D) {
@@ -205,7 +205,7 @@ public class TileGenerator {
 				do {
 					pos.setY(--height);
 					blockState = chunk.getBlockState(pos);
-				} while (blockState.getTopMaterialColor(world, pos) == MaterialColor.CLEAR && height > 0);
+				} while (blockState.getMapColor(world, pos) == MapColor.CLEAR && height > 0);
 			}
 		}
 
@@ -233,7 +233,7 @@ public class TileGenerator {
 			if (blockState.isAir()) {
 				brokeThroughCeil = true;
 			}
-			while ((!brokeThroughCeil || blockState.getTopMaterialColor(world, pos) == MaterialColor.CLEAR) && height > 0) {
+			while ((!brokeThroughCeil || blockState.getMapColor(world, pos) == MapColor.CLEAR) && height > 0) {
 				pos.setY(--height);
 				blockState = chunk.getBlockState(pos);
 				if (blockState.isAir()) {
@@ -248,7 +248,7 @@ public class TileGenerator {
 		}
 	}
 
-	public static int getRenderColor(MaterialColor color, int shade) {
+	public static int getRenderColor(MapColor color, int shade) {
 		int i = 220;
 		if (shade == 3) {
 			i = 135;

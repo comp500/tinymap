@@ -10,12 +10,13 @@ import net.minecraft.entity.Entity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.structure.StructureStart;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.TickScheduler;
+import net.minecraft.world.World;
 import net.minecraft.world.biome.source.BiomeArray;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
@@ -35,9 +36,15 @@ import java.util.stream.Stream;
  */
 class UnloadedChunkView implements Chunk {
 	private final ChunkSection[] sections;
+	private final int height;
+	private final int bottomY;
 
-	UnloadedChunkView(ChunkSection[] sections) {
+	UnloadedChunkView(ChunkSection[] sections, int height, int bottomY) {
 		this.sections = sections;
+		this.height = height;
+		this.bottomY = bottomY;
+		System.out.println(height);
+		System.out.println(bottomY);
 	}
 
 	@Override
@@ -81,7 +88,7 @@ class UnloadedChunkView implements Chunk {
 	}
 
 	@Override
-	public void setBlockEntity(BlockPos pos, BlockEntity blockEntity) {}
+	public void setBlockEntity(BlockEntity blockEntity) {}
 
 	@Override
 	public void addEntity(Entity entity) {}
@@ -120,7 +127,7 @@ class UnloadedChunkView implements Chunk {
 
 	@Override
 	public void setHeightmap(Heightmap.Type type, long[] heightmap) {
-		worldSurfaceHeightmap.setTo(heightmap);
+		worldSurfaceHeightmap.setTo(this, type, heightmap);
 	}
 
 	@Override
@@ -134,13 +141,13 @@ class UnloadedChunkView implements Chunk {
 	}
 
 	@Override
-	public ChunkPos getPos() {
+	public BlockPos method_35319(Heightmap.Type type) {
 		return null;
 	}
 
 	@Override
-	public void setLastSaveTime(long lastSaveTime) {
-
+	public ChunkPos getPos() {
+		return null;
 	}
 
 	@Override
@@ -184,12 +191,12 @@ class UnloadedChunkView implements Chunk {
 	}
 
 	@Override
-	public @Nullable CompoundTag getBlockEntityTag(BlockPos pos) {
+	public @Nullable NbtCompound getBlockEntityNbt(BlockPos pos) {
 		return null;
 	}
 
 	@Override
-	public @Nullable CompoundTag getPackedBlockEntityTag(BlockPos pos) {
+	public @Nullable NbtCompound getPackedBlockEntityNbt(BlockPos pos) {
 		return null;
 	}
 
@@ -261,5 +268,15 @@ class UnloadedChunkView implements Chunk {
 	@Override
 	public void setStructureReferences(Map<StructureFeature<?>, LongSet> structureReferences) {
 
+	}
+
+	@Override
+	public int getHeight() {
+		return height;
+	}
+
+	@Override
+	public int getBottomY() {
+		return bottomY;
 	}
 }
