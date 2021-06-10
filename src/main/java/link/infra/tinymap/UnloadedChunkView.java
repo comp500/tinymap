@@ -16,6 +16,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.TickScheduler;
+import net.minecraft.world.World;
 import net.minecraft.world.biome.source.BiomeArray;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
@@ -35,9 +36,15 @@ import java.util.stream.Stream;
  */
 class UnloadedChunkView implements Chunk {
 	private final ChunkSection[] sections;
+	private final int height;
+	private final int bottomY;
 
-	UnloadedChunkView(ChunkSection[] sections) {
+	UnloadedChunkView(ChunkSection[] sections, int height, int bottomY) {
 		this.sections = sections;
+		this.height = height;
+		this.bottomY = bottomY;
+		System.out.println(height);
+		System.out.println(bottomY);
 	}
 
 	@Override
@@ -265,11 +272,11 @@ class UnloadedChunkView implements Chunk {
 
 	@Override
 	public int getHeight() {
-		return 256;
+		return height;
 	}
 
 	@Override
 	public int getBottomY() {
-		return 0;
+		return bottomY;
 	}
 }
