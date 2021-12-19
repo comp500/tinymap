@@ -33,7 +33,6 @@
 					minZoom: 2,
 					maxZoom: 6,
 					tileSize: 16,
-					errorTileUrl: "notfound.png",
 					dim: dimName
 				});
 			}
@@ -54,6 +53,9 @@
 			};
 
 			overworld.addTo(map);
+
+            // TODO: make dimension list + spawn coordinates dynamic
+            // TODO: add "go to spawn" button
 
 			L.control.layers({
 				"minecraft:overworld": overworld,
