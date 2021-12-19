@@ -23,6 +23,7 @@ dependencies {
 	// You may need to force-disable transitiveness on them.
 
 	implementation "io.javalin:javalin:4.1.1" // TODO: package as published mod
+	implementation "org.apache.logging.log4j:log4j-slf4j-impl:2.17.0"
 	implementation "org.webjars.npm:leaflet:1.7.1" // TODO: package as mod + jar-in-jar
 }
 

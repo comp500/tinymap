@@ -2,6 +2,8 @@ package link.infra.tinymap;
 
 import io.javalin.Javalin;
 import io.javalin.http.NotFoundResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
@@ -10,10 +12,11 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
-import java.util.Objects;
 
 public class HttpServer {
-	public static Server start(int port, Path basePath, TileGenerator tileGenerator) {
+	private static final Logger LOGGER = LogManager.getLogger();
+
+	public static Javalin start(int port, Path basePath, TileGenerator tileGenerator) {
 		Javalin app = Javalin.create(config -> {
 			config.enableWebjars();
 			config.server(() -> {
@@ -35,7 +38,14 @@ public class HttpServer {
 
 				return server;
 			});
-		}).start(port);
+			config.showJavalinBanner = false;
+		});
+
+		app.events(event -> {
+			event.serverStarted(() -> {
+				LOGGER.info("Javalin activated by: tinymap");
+			});
+		});
 
 		app.get("/tiles/{dim}/{zoom}/{x}/{z}/tile.png", ctx -> {
 			ByteBuffer buf = tileGenerator.getTile(
@@ -51,6 +61,8 @@ public class HttpServer {
 			}
 		});
 
-		return Objects.requireNonNull(app.jettyServer()).server();
+		app.start(port);
+
+		return app;
 	}
 }

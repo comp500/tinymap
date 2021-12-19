@@ -1,11 +1,11 @@
 package link.infra.tinymap;
 
+import io.javalin.Javalin;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.jetty.server.Server;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -17,7 +17,7 @@ import java.util.Properties;
 public class TinyMap implements ModInitializer {
 	private static Properties CONFIG = null;
 
-	private static Server httpServer = null;
+	private static Javalin httpServer = null;
 	private static TileGenerator tileGenerator = null;
 
 	private static final Logger LOGGER = LogManager.getLogger();
@@ -38,8 +38,6 @@ public class TinyMap implements ModInitializer {
 				}
 			}
 			httpServer = HttpServer.start(Integer.parseInt(port), basePath, tileGenerator);
-
-			LOGGER.info("Open your web browser and navigate to http://127.0.0.1:" + port + '/');
 		});
 
 		ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
