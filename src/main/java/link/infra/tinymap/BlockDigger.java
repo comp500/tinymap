@@ -5,8 +5,8 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import link.infra.tinymap.mixin.MinecraftServerAccessor;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.server.world.ThreadedAnvilChunkStorage;
@@ -39,7 +39,7 @@ class BlockDigger {
 	// Thread-local session of BlockDigger
 	public class Session {
 		// Saved in testTileExists - as this data will be read again when rendering the chunk, might as well only read it once
-		private final Long2ObjectMap<CompoundTag> unloadedChunkCachedData = new Long2ObjectOpenHashMap<>();
+		private final Long2ObjectMap<NbtCompound> unloadedChunkCachedData = new Long2ObjectOpenHashMap<>();
 
 		public boolean testTileExists(int tileX, int tileZ, int zoomShift) {
 			int regionSize = TileGenerator.rightShiftButReversible(1, TileGenerator.TILE_TO_REGION_SHIFT - zoomShift);
@@ -98,7 +98,7 @@ class BlockDigger {
 					// Attempt to get it's NBT
 					try {
 						ChunkPos pos = new ChunkPos(chunkOriginX + chunkOffX, chunkOriginZ + chunkOffZ);
-						CompoundTag chunkTag = tacs.getNbt(pos);
+						NbtCompound chunkTag = tacs.getNbt(pos);
 						if (chunkTag != null) {
 							unloadedChunkCachedData.put(pos.toLong(), chunkTag);
 							return true;
@@ -119,7 +119,7 @@ class BlockDigger {
 				return world.getChunk(x, z);
 			} else {
 				ChunkPos pos = new ChunkPos(x, z);
-				CompoundTag chunkData = unloadedChunkCachedData.remove(pos.toLong());
+				NbtCompound chunkData = unloadedChunkCachedData.remove(pos.toLong());
 				if (chunkData == null) {
 					try {
 						// TODO: cache??
@@ -134,12 +134,12 @@ class BlockDigger {
 					}
 				}
 
-				CompoundTag level = chunkData.getCompound("Level");
-				ListTag sectionList = level.getList("Sections", 10);
+				NbtCompound level = chunkData.getCompound("Level");
+				NbtList sectionList = level.getList("Sections", 10);
 				ChunkSection[] sections = new ChunkSection[16];
 
 				for (int i = 0; i < sectionList.size(); ++i) {
-					CompoundTag sectionTag = sectionList.getCompound(i);
+					NbtCompound sectionTag = sectionList.getCompound(i);
 					int y = sectionTag.getByte("Y");
 					if (sectionTag.contains("Palette", 9) && sectionTag.contains("BlockStates", 12)) {
 						ChunkSection section = new ChunkSection(y << 4);
@@ -153,7 +153,7 @@ class BlockDigger {
 
 				Chunk unloadedChunkView = new UnloadedChunkView(sections);
 
-				CompoundTag heightmaps = level.getCompound("Heightmaps");
+				NbtCompound heightmaps = level.getCompound("Heightmaps");
 				String heightmapName = Heightmap.Type.WORLD_SURFACE.getName();
 				if (heightmaps.contains(heightmapName, 12)) {
 					unloadedChunkView.setHeightmap(Heightmap.Type.WORLD_SURFACE, heightmaps.getLongArray(heightmapName));

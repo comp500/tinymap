@@ -10,7 +10,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.structure.StructureStart;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -184,12 +184,12 @@ class UnloadedChunkView implements Chunk {
 	}
 
 	@Override
-	public @Nullable CompoundTag getBlockEntityTag(BlockPos pos) {
+	public @Nullable NbtCompound getBlockEntityNbt(BlockPos pos) {
 		return null;
 	}
 
 	@Override
-	public @Nullable CompoundTag getPackedBlockEntityTag(BlockPos pos) {
+	public @Nullable NbtCompound getPackedBlockEntityNbt(BlockPos pos) {
 		return null;
 	}
 
