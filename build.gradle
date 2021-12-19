@@ -22,7 +22,8 @@ dependencies {
 	// PSA: Some older mods, compiled on Loom 0.2.1, might have outdated Maven POMs.
 	// You may need to force-disable transitiveness on them.
 
-	implementation "io.javalin:javalin:4.1.1" // TODO: package as mod
+	implementation "io.javalin:javalin:4.1.1" // TODO: package as published mod
+	implementation "org.webjars.npm:leaflet:1.7.1" // TODO: package as mod + jar-in-jar
 }
 
 processResources {

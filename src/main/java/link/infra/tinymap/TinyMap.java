@@ -1,18 +1,11 @@
 package link.infra.tinymap;
 
-import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.*;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.http.*;
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
-import io.netty.handler.stream.ChunkedWriteHandler;
-import io.netty.util.concurrent.DefaultThreadFactory;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.eclipse.jetty.server.Server;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -24,9 +17,10 @@ import java.util.Properties;
 public class TinyMap implements ModInitializer {
 	private static Properties CONFIG = null;
 
-	private static EventLoopGroup managerGroup = null;
-	private static EventLoopGroup workerGroup = null;
+	private static Server httpServer = null;
 	private static TileGenerator tileGenerator = null;
+
+	private static final Logger LOGGER = LogManager.getLogger();
 
 	@Override
 	public void onInitialize() {
@@ -35,39 +29,29 @@ public class TinyMap implements ModInitializer {
 		String port = CONFIG.getProperty("web_port");
 
 		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
-			managerGroup = new NioEventLoopGroup(1, new DefaultThreadFactory(NioEventLoopGroup.class, true));
-			workerGroup = new NioEventLoopGroup(0, new DefaultThreadFactory(NioEventLoopGroup.class, true));
 			tileGenerator = new TileGenerator(server);
-			ServerBootstrap b = new ServerBootstrap();
-			b.group(managerGroup, workerGroup)
-				.channel(NioServerSocketChannel.class)
-				.handler(new LoggingHandler(LogLevel.INFO))
-				.childHandler(new ChannelInitializer<SocketChannel>() {
-					@Override
-					protected void initChannel(SocketChannel ch) {
-						ChannelPipeline pipeline = ch.pipeline();
-						pipeline.addLast(new HttpServerCodec());
-						pipeline.addLast(new HttpObjectAggregator(65536));
-						pipeline.addLast(new ChunkedWriteHandler());
-						pipeline.addLast(new HttpServerHandler(basePath, tileGenerator));
-					}
-				});
-			b.bind(Integer.parseInt(port));
+			if (httpServer != null) {
+				try {
+					httpServer.stop();
+				} catch (Exception e) {
+					LOGGER.error("Failed to stop Javalin server", e);
+				}
+			}
+			httpServer = HttpServer.start(Integer.parseInt(port), basePath, tileGenerator);
 
-
-			System.out.println("Open your web browser and navigate to http://127.0.0.1:" + port + '/');
+			LOGGER.info("Open your web browser and navigate to http://127.0.0.1:" + port + '/');
 		});
 
 		ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
-			if (managerGroup != null) {
-				managerGroup.shutdownGracefully();
-			}
-			if (workerGroup != null) {
-				workerGroup.shutdownGracefully();
-			}
-			managerGroup = null;
-			workerGroup = null;
 			tileGenerator = null;
+			if (httpServer != null) {
+				try {
+					httpServer.stop();
+				} catch (Exception e) {
+					LOGGER.error("Failed to stop Javalin server", e);
+				}
+			}
+			httpServer = null;
 		});
 	}
 
