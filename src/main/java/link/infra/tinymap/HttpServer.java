@@ -10,7 +10,6 @@ import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
 
 public class HttpServer {
@@ -48,14 +47,14 @@ public class HttpServer {
 		});
 
 		app.get("/tiles/{dim}/{zoom}/{x}/{z}/tile.png", ctx -> {
-			ByteBuffer buf = tileGenerator.getTile(
+			byte[] tile = tileGenerator.getTile(
 				ctx.pathParam("dim"),
 				ctx.pathParamAsClass("x", Integer.class).get(),
 				ctx.pathParamAsClass("z", Integer.class).get(),
 				0);
-			if (buf != null) {
+			if (tile != null) {
 				ctx.contentType("image/png");
-				ctx.result(buf.array()); // TODO: is this efficient?
+				ctx.result(tile);
 			} else {
 				throw new NotFoundResponse();
 			}

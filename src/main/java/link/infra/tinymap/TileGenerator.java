@@ -22,7 +22,6 @@ import java.awt.image.DirectColorModel;
 import java.awt.image.Raster;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.WeakHashMap;
 
 public class TileGenerator {
@@ -58,7 +57,7 @@ public class TileGenerator {
 
 	private static final WeakHashMap<ServerWorld, BlockDigger> diggers = new WeakHashMap<>();
 
-	public ByteBuffer getTile(String worldName, int x, int z, int zoom) throws IOException {
+	public byte[] getTile(String worldName, int x, int z, int zoom) throws IOException {
 		ServerWorld world = getWorldForName(worldName);
 		if (world == null) {
 			return null;
@@ -79,22 +78,11 @@ public class TileGenerator {
 			BufferedImage bufImg = new BufferedImage(new DirectColorModel(32, masks[0], masks[1], masks[2], masks[3]),
 				Raster.createPackedRaster(buf, TILE_SIZE, TILE_SIZE, TILE_SIZE, masks, null), false, null);
 
-			// TODO: write directly
+			// TODO: experiment with writing PNG manually?
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			ImageIO.write(bufImg, "png", baos);
 
-//			ByteBuffer srcBuf = MemoryUtil.memAlloc(4 * 16 * 16);
-//			srcBuf.asIntBuffer().put(colors);
-//			srcBuf.flip();
-//
-//			CompletableFuture<ByteBuffer> pngDataFut = new CompletableFuture<>();
-//
-//			STBImageWrite.stbi_write_png_to_func((context, data, size) ->
-//				pngDataFut.complete(STBIWriteCallback.getData(data, size)),
-//				0, 16, 16, 4, srcBuf, 4 * 16);
-
-			//return pngDataFut.join();
-			return ByteBuffer.wrap(baos.toByteArray());
+			return baos.toByteArray();
 		} else {
 			return null;
 		}
