@@ -14,6 +14,7 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
+import net.minecraft.world.chunk.ChunkStatus;
 
 import java.io.File;
 import java.io.IOException;
@@ -135,6 +136,10 @@ class BlockDigger {
 				}
 
 				NbtCompound level = chunkData.getCompound("Level");
+				ChunkStatus status = ChunkStatus.byId(level.getString("Status"));
+				if (!status.isAtLeast(ChunkStatus.FULL)) {
+					return null;
+				}
 				NbtList sectionList = level.getList("Sections", 10);
 				ChunkSection[] sections = new ChunkSection[16];
 
