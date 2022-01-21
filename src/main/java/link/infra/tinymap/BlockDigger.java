@@ -148,7 +148,7 @@ class BlockDigger {
 					int y = sectionTag.getByte("Y");
 					if (sectionTag.contains("Palette", 9) && sectionTag.contains("BlockStates", 12)) {
 						ChunkSection section = new ChunkSection(y << 4);
-						section.getContainer().read(sectionTag.getList("Palette", 10), sectionTag.getLongArray("BlockStates"));
+						section.getBlockStateContainer().read(sectionTag.getList("Palette", 10), sectionTag.getLongArray("BlockStates"));
 						section.calculateCounts();
 						if (!section.isEmpty()) {
 							sections[y] = section;
