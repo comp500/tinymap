@@ -37,11 +37,13 @@ import java.util.stream.Stream;
 class UnloadedChunkView extends Chunk {
 	private final ChunkSection[] sections;
 	private final World world;
+	private final Heightmap worldSurfaceHeightmap;
 
 	UnloadedChunkView(ChunkSection[] sections, World world, ChunkPos pos) {
 		super(pos, UpgradeData.NO_UPGRADE_DATA, world, world.getRegistryManager().get(Registry.BIOME_KEY), 0, null, null);
 		this.sections = sections;
 		this.world = world;
+		this.worldSurfaceHeightmap = new Heightmap(this, Heightmap.Type.WORLD_SURFACE);
 	}
 
 	@Override
@@ -54,8 +56,12 @@ class UnloadedChunkView extends Chunk {
 		int x = pos.getX();
 		int y = pos.getY();
 		int z = pos.getZ();
-		if (y >= 0 && y >> 4 < this.sections.length) {
-			ChunkSection chunkSection = this.sections[y >> 4];
+
+		int sectionIndex = this.getSectionIndex(y);
+
+		if (sectionIndex >= 0 && sectionIndex < this.sections.length) {
+			ChunkSection chunkSection = this.sections[sectionIndex];
+
 			if (!chunkSection.isEmpty()) {
 				return chunkSection.getBlockState(x & 15, y & 15, z & 15);
 			}
@@ -69,8 +75,12 @@ class UnloadedChunkView extends Chunk {
 		int x = pos.getX();
 		int y = pos.getY();
 		int z = pos.getZ();
-		if (y >= 0 && y >> 4 < this.sections.length) {
-			ChunkSection chunkSection = this.sections[y >> 4];
+
+		int sectionIndex = this.getSectionIndex(y);
+
+		if (sectionIndex >= 0 && sectionIndex < this.sections.length) {
+			ChunkSection chunkSection = this.sections[sectionIndex];
+
 			if (!chunkSection.isEmpty()) {
 				return chunkSection.getFluidState(x & 15, y & 15, z & 15);
 			}
@@ -99,8 +109,6 @@ class UnloadedChunkView extends Chunk {
 	public ChunkSection[] getSectionArray() {
 		return sections;
 	}
-
-	private final Heightmap worldSurfaceHeightmap = new Heightmap(this, Heightmap.Type.WORLD_SURFACE);
 
 	@Override
 	public Collection<Map.Entry<Heightmap.Type, Heightmap>> getHeightmaps() {
@@ -260,5 +268,15 @@ class UnloadedChunkView extends Chunk {
 	@Override
 	public void setStructureReferences(Map<StructureFeature<?>, LongSet> structureReferences) {
 
+	}
+
+	@Override
+	public int getHeight() {
+		return this.world.getHeight();
+	}
+
+	@Override
+	public int getBottomY() {
+		return this.world.getBottomY();
 	}
 }
