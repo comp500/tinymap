@@ -1,20 +1,33 @@
 package link.infra.tinymap;
 
+import com.mojang.serialization.Codec;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import link.infra.tinymap.mixin.MinecraftServerAccessor;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.server.world.ThreadedAnvilChunkStorage;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.registry.BuiltinRegistries;
+import net.minecraft.util.registry.Registry;
+import net.minecraft.world.ChunkSerializer;
 import net.minecraft.world.Heightmap;
+import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.BiomeKeys;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.ChunkStatus;
+import net.minecraft.world.chunk.PalettedContainer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,8 +44,19 @@ class BlockDigger {
 	private final ServerWorld world;
 	private final ThreadedAnvilChunkStorage tacs;
 
+	private static final Codec<PalettedContainer<BlockState>> CODEC = PalettedContainer.createCodec(Block.STATE_IDS, BlockState.CODEC, PalettedContainer.PaletteProvider.BLOCK_STATE, Blocks.AIR.getDefaultState());
+	private static final Logger LOGGER = LogManager.getLogger();
+
+	private static Codec<PalettedContainer<Biome>> createCodec(Registry<Biome> biomeRegistry) {
+		return PalettedContainer.createCodec(biomeRegistry, biomeRegistry.getCodec(), PalettedContainer.PaletteProvider.BIOME, biomeRegistry.getOrThrow(BiomeKeys.PLAINS));
+	}
+
+	private static void logRecoverableError(ChunkPos chunkPos, int y, String message) {
+		LOGGER.error("Recoverable errors when loading section [" + chunkPos.x + ", " + y + ", " + chunkPos.z + "]: " + message);
+	}
+
 	public BlockDigger(MinecraftServer server, ServerWorld world) {
-		regionFolder = new File(((MinecraftServerAccessor) server).getSession().getWorldDirectory(world.getRegistryKey()), "region");
+		regionFolder = new File(((MinecraftServerAccessor) server).getSession().getWorldDirectory(world.getRegistryKey()).toFile(), "region");
 		this.world = world;
 		this.tacs = world.getChunkManager().threadedAnvilChunkStorage;
 	}
@@ -136,27 +160,38 @@ class BlockDigger {
 				}
 
 				NbtCompound level = chunkData.getCompound("Level");
-				ChunkStatus status = ChunkStatus.byId(level.getString("Status"));
+
+				ChunkStatus status = ChunkStatus.byId(chunkData.getString("Status"));
 				if (!status.isAtLeast(ChunkStatus.FULL)) {
 					return null;
 				}
-				NbtList sectionList = level.getList("Sections", 10);
-				ChunkSection[] sections = new ChunkSection[16];
+
+				NbtList sectionList = chunkData.getList("sections", 10);
+
+				int vertical_section_count = world.countVerticalSections();
+
+				ChunkSection[] sections = new ChunkSection[vertical_section_count];
+
+				PalettedContainer<Biome> palettedContainer2;
+				Object palettedContainer;
+				Registry<Biome> registry = world.getRegistryManager().get(Registry.BIOME_KEY);
+				Codec<PalettedContainer<Biome>> codec = createCodec(registry);
 
 				for (int i = 0; i < sectionList.size(); ++i) {
 					NbtCompound sectionTag = sectionList.getCompound(i);
 					int y = sectionTag.getByte("Y");
-					if (sectionTag.contains("Palette", 9) && sectionTag.contains("BlockStates", 12)) {
-						ChunkSection section = new ChunkSection(y << 4);
-						section.getBlockStateContainer().read(sectionTag.getList("Palette", 10), sectionTag.getLongArray("BlockStates"));
-						section.calculateCounts();
-						if (!section.isEmpty()) {
-							sections[y] = section;
-						}
+					int l = world.sectionCoordToIndex(y);
+
+					if (l >= 0 && l < sections.length) {
+						palettedContainer = sectionTag.contains("block_states", 10) ? (PalettedContainer)CODEC.parse(NbtOps.INSTANCE, sectionTag.getCompound("block_states")).promotePartial(errorMessage -> logRecoverableError(pos, y, errorMessage)).getOrThrow(false, LOGGER::error) : new PalettedContainer(Block.STATE_IDS, Blocks.AIR.getDefaultState(), PalettedContainer.PaletteProvider.BLOCK_STATE);
+						palettedContainer2 = sectionTag.contains("biomes", 10) ? (PalettedContainer)codec.parse(NbtOps.INSTANCE, sectionTag.getCompound("biomes")).promotePartial(errorMessage -> logRecoverableError(pos, y, errorMessage)).getOrThrow(false, LOGGER::error) : new PalettedContainer<Biome>(registry, registry.getOrThrow(BiomeKeys.PLAINS), PalettedContainer.PaletteProvider.BIOME);
+						ChunkSection chunkSection = new ChunkSection(y, (PalettedContainer<BlockState>)palettedContainer, (PalettedContainer<Biome>)palettedContainer2);
+						chunkSection.calculateCounts();
+						sections[l] = chunkSection;
 					}
 				}
 
-				Chunk unloadedChunkView = new UnloadedChunkView(sections);
+				Chunk unloadedChunkView = new UnloadedChunkView(sections, world, pos);
 
 				NbtCompound heightmaps = level.getCompound("Heightmaps");
 				String heightmapName = Heightmap.Type.WORLD_SURFACE.getName();
