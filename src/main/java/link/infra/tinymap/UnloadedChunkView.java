@@ -95,7 +95,7 @@ class UnloadedChunkView extends Chunk {
 	}
 
 	@Override
-	public void setBlockEntity(BlockPos pos, BlockEntity blockEntity) {}
+	public void setBlockEntity(BlockEntity blockEntity) {}
 
 	@Override
 	public void addEntity(Entity entity) {}
@@ -132,7 +132,7 @@ class UnloadedChunkView extends Chunk {
 
 	@Override
 	public void setHeightmap(Heightmap.Type type, long[] heightmap) {
-		worldSurfaceHeightmap.setTo(heightmap);
+		worldSurfaceHeightmap.setTo(this, type, heightmap);
 	}
 
 	@Override
