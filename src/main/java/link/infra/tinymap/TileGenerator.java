@@ -16,6 +16,7 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkStatus;
 
 import javax.imageio.ImageIO;
+import link.infra.tinymap.BlockDigger.Session;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.awt.image.DirectColorModel;
@@ -139,7 +140,8 @@ public class TileGenerator {
 							searcher.calcWaterDepth(chunk);
 						}
 
-						MapColor matColor = searcher.blockState.getTopMaterialColor(world, searcher.pos);
+						MapColor matColor = searcher.blockState.getMapColor(world, searcher.pos);
+
 						int shade;
 
 						if (matColor == MapColor.WATER_BLUE) {
@@ -194,7 +196,7 @@ public class TileGenerator {
 				do {
 					pos.setY(--height);
 					blockState = chunk.getBlockState(pos);
-				} while (blockState.getTopMaterialColor(world, pos) == MapColor.CLEAR && height > 0);
+				} while (blockState.getMapColor(world, pos) == MapColor.CLEAR && height > 0);
 			}
 		}
 
@@ -222,7 +224,8 @@ public class TileGenerator {
 			if (blockState.isAir()) {
 				brokeThroughCeil = true;
 			}
-			while ((!brokeThroughCeil || blockState.getTopMaterialColor(world, pos) == MapColor.CLEAR) && height > 0) {
+
+			while ((!brokeThroughCeil || blockState.getMapColor(world, pos) == MapColor.CLEAR) && height > 0) {
 				pos.setY(--height);
 				blockState = chunk.getBlockState(pos);
 				if (blockState.isAir()) {

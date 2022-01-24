@@ -14,14 +14,15 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.structure.StructureStart;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.Heightmap;
-import net.minecraft.world.TickScheduler;
-import net.minecraft.world.biome.source.BiomeArray;
+import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.UpgradeData;
 import net.minecraft.world.gen.feature.StructureFeature;
+import net.minecraft.world.tick.BasicTickScheduler;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
@@ -33,11 +34,16 @@ import java.util.stream.Stream;
 /**
  * Skeleton implementation of Chunk to represent an unloaded chunk view
  */
-class UnloadedChunkView implements Chunk {
+class UnloadedChunkView extends Chunk {
 	private final ChunkSection[] sections;
+	private final World world;
+	private final Heightmap worldSurfaceHeightmap;
 
-	UnloadedChunkView(ChunkSection[] sections) {
+	UnloadedChunkView(ChunkSection[] sections, World world, ChunkPos pos) {
+		super(pos, UpgradeData.NO_UPGRADE_DATA, world, world.getRegistryManager().get(Registry.BIOME_KEY), 0, null, null);
 		this.sections = sections;
+		this.world = world;
+		this.worldSurfaceHeightmap = new Heightmap(this, Heightmap.Type.WORLD_SURFACE);
 	}
 
 	@Override
@@ -50,9 +56,13 @@ class UnloadedChunkView implements Chunk {
 		int x = pos.getX();
 		int y = pos.getY();
 		int z = pos.getZ();
-		if (y >= 0 && y >> 4 < this.sections.length) {
-			ChunkSection chunkSection = this.sections[y >> 4];
-			if (!ChunkSection.isEmpty(chunkSection)) {
+
+		int sectionIndex = this.getSectionIndex(y);
+
+		if (sectionIndex >= 0 && sectionIndex < this.sections.length) {
+			ChunkSection chunkSection = this.sections[sectionIndex];
+
+			if (!chunkSection.isEmpty()) {
 				return chunkSection.getBlockState(x & 15, y & 15, z & 15);
 			}
 		}
@@ -65,9 +75,13 @@ class UnloadedChunkView implements Chunk {
 		int x = pos.getX();
 		int y = pos.getY();
 		int z = pos.getZ();
-		if (y >= 0 && y >> 4 < this.sections.length) {
-			ChunkSection chunkSection = this.sections[y >> 4];
-			if (!ChunkSection.isEmpty(chunkSection)) {
+
+		int sectionIndex = this.getSectionIndex(y);
+
+		if (sectionIndex >= 0 && sectionIndex < this.sections.length) {
+			ChunkSection chunkSection = this.sections[sectionIndex];
+
+			if (!chunkSection.isEmpty()) {
 				return chunkSection.getFluidState(x & 15, y & 15, z & 15);
 			}
 		}
@@ -81,7 +95,7 @@ class UnloadedChunkView implements Chunk {
 	}
 
 	@Override
-	public void setBlockEntity(BlockPos pos, BlockEntity blockEntity) {}
+	public void setBlockEntity(BlockEntity blockEntity) {}
 
 	@Override
 	public void addEntity(Entity entity) {}
@@ -95,8 +109,6 @@ class UnloadedChunkView implements Chunk {
 	public ChunkSection[] getSectionArray() {
 		return sections;
 	}
-
-	private final Heightmap worldSurfaceHeightmap = new Heightmap(this, Heightmap.Type.WORLD_SURFACE);
 
 	@Override
 	public Collection<Map.Entry<Heightmap.Type, Heightmap>> getHeightmaps() {
@@ -120,7 +132,7 @@ class UnloadedChunkView implements Chunk {
 
 	@Override
 	public void setHeightmap(Heightmap.Type type, long[] heightmap) {
-		worldSurfaceHeightmap.setTo(heightmap);
+		worldSurfaceHeightmap.setTo(this, type, heightmap);
 	}
 
 	@Override
@@ -139,11 +151,6 @@ class UnloadedChunkView implements Chunk {
 	}
 
 	@Override
-	public void setLastSaveTime(long lastSaveTime) {
-
-	}
-
-	@Override
 	public Map<StructureFeature<?>, StructureStart<?>> getStructureStarts() {
 		return null;
 	}
@@ -151,11 +158,6 @@ class UnloadedChunkView implements Chunk {
 	@Override
 	public void setStructureStarts(Map<StructureFeature<?>, StructureStart<?>> structureStarts) {
 
-	}
-
-	@Override
-	public @Nullable BiomeArray getBiomeArray() {
-		return null;
 	}
 
 	@Override
@@ -199,12 +201,17 @@ class UnloadedChunkView implements Chunk {
 	}
 
 	@Override
-	public TickScheduler<Block> getBlockTickScheduler() {
+	public BasicTickScheduler<Block> getBlockTickScheduler() {
 		return null;
 	}
 
 	@Override
-	public TickScheduler<Fluid> getFluidTickScheduler() {
+	public BasicTickScheduler<Fluid> getFluidTickScheduler() {
+		return null;
+	}
+
+	@Override
+	public TickSchedulers getTickSchedulers() {
 		return null;
 	}
 
@@ -261,5 +268,15 @@ class UnloadedChunkView implements Chunk {
 	@Override
 	public void setStructureReferences(Map<StructureFeature<?>, LongSet> structureReferences) {
 
+	}
+
+	@Override
+	public int getHeight() {
+		return this.world.getHeight();
+	}
+
+	@Override
+	public int getBottomY() {
+		return this.world.getBottomY();
 	}
 }
