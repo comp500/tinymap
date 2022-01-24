@@ -4,7 +4,8 @@
 	"package": "link.infra.tinymap.mixin",
 	"compatibilityLevel": "JAVA_8",
 	"mixins": [
-		"MinecraftServerAccessor"
+		"MinecraftServerAccessor",
+		"ThreadedAnvilChunkStorageMixin"
 	],
 	"client": [
 	],

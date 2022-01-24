@@ -6,6 +6,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import link.infra.tinymap.mixin.MinecraftServerAccessor;
+import link.infra.tinymap.mixin.ThreadedAnvilChunkStorageMixin;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -148,7 +149,7 @@ class BlockDigger {
 				if (chunkData == null) {
 					try {
 						// TODO: cache??
-						chunkData = tacs.getNbt(pos);
+						chunkData = ((ThreadedAnvilChunkStorageMixin) tacs).callGetUpdatedChunkNbt(pos);
 					} catch (IOException e) {
 						// TODO: better logging
 						e.printStackTrace();
@@ -162,8 +163,15 @@ class BlockDigger {
 				NbtCompound level = chunkData.getCompound("Level");
 
 				ChunkStatus status = ChunkStatus.byId(chunkData.getString("Status"));
+
+				// We only want to render fully generated chunks
 				if (!status.isAtLeast(ChunkStatus.FULL)) {
-					return null;
+
+					// Chunks that have been updated via a DFU however are marked as "EMPTY",
+					// but actually contain all the data needed to render the map
+					if (!status.equals(ChunkStatus.EMPTY)) {
+						return null;
+					}
 				}
 
 				NbtList sectionList = chunkData.getList("sections", 10);
